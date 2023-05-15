@@ -1,0 +1,9 @@
+astropy==5.0.1
+eagleSqlTools==2.0.0
+h5py==3.6.0
+numpy==1.22.2
+pandas==1.4.1
+scipy==1.8.0
+sep==1.2.0
+sql==2022.4.0
+wget==3.2
