@@ -4,11 +4,12 @@
 # with or without modification, are permitted.
 
 import math
+
 import numpy as np
 from sklearn.decomposition import PCA
-from scipy.interpolate import interp1d
 
-def apply_PCA_to_find_main_axes_3D(coordinates):
+
+def apply_pca_to_find_main_axes_3d(coordinates):
     """
     Applies Principal Component Analysis (PCA) to find the main axes in a three-dimensional space.
     
@@ -16,20 +17,21 @@ def apply_PCA_to_find_main_axes_3D(coordinates):
     - coordinates: A 2D numpy array or a list of lists containing the coordinates of points in three-dimensional space.
                    Each row represents a point, and each column represents a coordinate (x, y, z).
                    
-    Returns:
-    - rotation_matrix: A 2D numpy array representing the rotation matrix obtained from PCA.
-                       Each row corresponds to a principal component (main axis), and each column corresponds to a coordinate axis.
-    - explained_variances: A 1D numpy array containing the explained variances along the principal components.
-                           The values indicate the amount of variance captured by each principal component.
+    Returns: - rotation_matrix: A 2D numpy array representing the rotation matrix obtained from PCA. Each row
+    corresponds to a principal component (main axis), and each column corresponds to a coordinate axis. -
+    explained_variances: A 1D numpy array containing the explained variances along the principal components. The
+    values indicate the amount of variance captured by each principal component.
     """
     m = np.array(coordinates).T
     pca = PCA(3)
     pca.fit(m)
     rotation_matrix = pca.components_
-    a, b, c = np.sqrt(pca.explained_variance_[0]), np.sqrt(pca.explained_variance_[1]), np.sqrt(pca.explained_variance_[2])
+    a, b, c = np.sqrt(pca.explained_variance_[0]), np.sqrt(pca.explained_variance_[1]), np.sqrt(
+        pca.explained_variance_[2])
     return rotation_matrix, a, b, c
 
-def PCA_2D(coordinates):
+
+def pca_2d(coordinates):
     """
     Retrieves the axis ratios of 3 projections for a given 3D distribution and the projected angle of the main axes.
     
@@ -70,7 +72,7 @@ def PCA_2D(coordinates):
     return xy_a, xy_b, yz_b, yz_c, xz_a, xz_c, angle_1, angle_2, angle_3
 
 
-def select_core_and_apply_method(coordinates, density_radius, _2D):
+def select_core_and_apply_method(coordinates, density_radius, _2d):
     """
     Selects particles within a density radius from the center and applies a method based on the given parameters.
     
@@ -82,12 +84,12 @@ def select_core_and_apply_method(coordinates, density_radius, _2D):
     
     Returns:
     If _2D is True:
-    - core_xy_a: The square root of the explained variance along the x axis in the XY projection of the core particles.
-    - core_xy_b: The square root of the explained variance along the y axis in the XY projection of the core particles.
-    - core_yz_b: The square root of the explained variance along the y axis in the YZ projection of the core particles.
-    - core_yz_c: The square root of the explained variance along the z axis in the YZ projection of the core particles.
-    - core_xz_a: The square root of the explained variance along the x axis in the XZ projection of the core particles.
-    - core_xz_c: The square root of the explained variance along the z axis in the XZ projection of the core particles.
+    - core_xy_a: The square root of the explained variance along the x-axis in the XY projection of the core particles.
+    - core_xy_b: The square root of the explained variance along the y-axis in the XY projection of the core particles.
+    - core_yz_b: The square root of the explained variance along the y-axis in the YZ projection of the core particles.
+    - core_yz_c: The square root of the explained variance along the z-axis in the YZ projection of the core particles.
+    - core_xz_a: The square root of the explained variance along the x-axis in the XZ projection of the core particles.
+    - core_xz_c: The square root of the explained variance along the z-axis in the XZ projection of the core particles.
     - angle_1: The projected angle of the main axes in the XY projection of the core particles (in degrees).
     - angle_2: The projected angle of the main axes in the YZ projection of the core particles (in degrees).
     - angle_3: The projected angle of the main axes in the XZ projection of the core particles (in degrees).
@@ -99,16 +101,20 @@ def select_core_and_apply_method(coordinates, density_radius, _2D):
     - core_b: The square root of the explained variance along the second principal component of the core particles.
     - core_c: The square root of the explained variance along the third principal component of the core particles.
     """
-    distance_to_center = np.sqrt(coordinates[0]**2+coordinates[1]**2+coordinates[2]**2)
-    core_selected_particles = np.array([coordinates[0][distance_to_center<density_radius],coordinates[1][distance_to_center<density_radius],coordinates[2][distance_to_center<density_radius]])
-    if _2D == True:
-        core_xy_a, core_xy_b, core_yz_b, core_yz_c, core_xz_a, core_xz_c, angle_1, angle_2, angle_3 = PCA_2D(core_selected_particles)
+    distance_to_center = np.sqrt(coordinates[0] ** 2 + coordinates[1] ** 2 + coordinates[2] ** 2)
+    core_selected_particles = np.array(
+        [coordinates[0][distance_to_center < density_radius], coordinates[1][distance_to_center < density_radius],
+         coordinates[2][distance_to_center < density_radius]])
+    if _2d:
+        core_xy_a, core_xy_b, core_yz_b, core_yz_c, core_xz_a, core_xz_c, angle_1, angle_2, angle_3 = pca_2d(
+            core_selected_particles)
         return core_xy_a, core_xy_b, core_yz_b, core_yz_c, core_xz_a, core_xz_c, angle_1, angle_2, angle_3
     else:
-        core_rotation_matrix, core_a, core_b, core_c = apply_PCA_to_find_main_axes_3D(core_selected_particles)
+        core_rotation_matrix, core_a, core_b, core_c = apply_pca_to_find_main_axes_3d(core_selected_particles)
         return core_rotation_matrix, core_a, core_b, core_c
 
-def set_origin(coordinates, CentreOfMass):
+
+def set_origin(coordinates, centre_of_mass):
     """
     Sets the origin of the coordinate system based on the median of a 3D distribution of points.
     
@@ -121,22 +127,22 @@ def set_origin(coordinates, CentreOfMass):
     - coordinates_new: A 3D numpy array containing the updated coordinates with respect to the new origin.
     - median_list: A list containing the medians for each pass.
     """
-    passes = 3 if CentreOfMass is None else 1
+    passes = 3 if centre_of_mass is None else 1
     coordinates_new = coordinates.copy()
     median_list = []
-    
+
     for i in range(passes):
         m = np.array(coordinates_new).T
-        if CentreOfMass is not None:
-            median = CentreOfMass
+        if centre_of_mass is not None:
+            median = centre_of_mass
         else:
             median = np.median(m, axis=0)
-        
+
         median_list.append(median)
-        coordinates_T = m - median
-        coordinates_new = coordinates_T.T
-        
-        distance_to_center = np.sqrt(coordinates_new[0]**2 + coordinates_new[1]**2 + coordinates_new[2]**2)
+        coordinates_t = m - median
+        coordinates_new = coordinates_t.T
+
+        distance_to_center = np.sqrt(coordinates_new[0] ** 2 + coordinates_new[1] ** 2 + coordinates_new[2] ** 2)
         core = np.max(coordinates_new) / 10
         m = coordinates_new.T
         n = np.array([coordinates_new[0][distance_to_center < core],
@@ -145,12 +151,13 @@ def set_origin(coordinates, CentreOfMass):
         if len(n.T[0]) < 10:
             n = coordinates_new.T
         median = np.median(n, axis=0)
-        coordinates_1T = m - median
-        coordinates_new = coordinates_1T.T
-    
+        coordinates_1_t = m - median
+        coordinates_new = coordinates_1_t.T
+
     return coordinates_new, median_list
 
-def find_density_radius(coordinates, density_core, fraction_density, masses, gn):
+
+def find_density_radius(coordinates, density_core, fraction_density, masses):
     """
     Estimates the density radius of a 3D distribution of points by computing a mass growth curve over the distribution.
     This function tries to take into account the diversity of galaxy structures in universe simulations, 
@@ -170,64 +177,66 @@ def find_density_radius(coordinates, density_core, fraction_density, masses, gn)
     maxi = 50
     radius = []
     mass = []
-    distance_to_center = np.sqrt(coordinates[0]**2+coordinates[1]**2+coordinates[2]**2)
-    maximum = np.max(np.array([np.max(coordinates[0]),np.max(coordinates[1]),np.max(coordinates[2])]))
-    k=0
+    distance_to_center = np.sqrt(coordinates[0] ** 2 + coordinates[1] ** 2 + coordinates[2] ** 2)
+    maximum = np.max(np.array([np.max(coordinates[0]), np.max(coordinates[1]), np.max(coordinates[2])]))
+    k = 0
 
-    for i in np.linspace(0,2*maximum,maxi):
+    for i in np.linspace(0, 2 * maximum, maxi):
         if i == 0:
             mass.append(0)
             radius.append(0)
         else:
             j = i
             radius.append(j)
-            mass.append(np.sum(masses[distance_to_center<=j]))
+            mass.append(np.sum(masses[distance_to_center <= j]))
         if k > 3:
-            Mean_3_last_points = np.sum((mass[k-3]+mass[k-2]+mass[k-1])/3)
-            if abs(mass[k] - Mean_3_last_points) <= 1*np.std([mass[k-3],mass[k-2],mass[k-1]]):
+            mean_3_last_points = np.sum((mass[k - 3] + mass[k - 2] + mass[k - 1]) / 3)
+            if abs(mass[k] - mean_3_last_points) <= 1 * np.std([mass[k - 3], mass[k - 2], mass[k - 1]]):
                 break
-        k=k+1       
-    mass_core = (1-density_core)*mass[-1]
-    
+        k = k + 1
+    mass_core = (1 - density_core) * mass[-1]
+
     if mass_core < 1e6:
         core_radius = 0.003
     else:
-        core_radius, _ = interpolated_intercept(np.array(radius),np.array(mass)/mass[-1],np.linspace(mass_core/mass[-1],mass_core/mass[-1],len(radius)))
+        core_radius, _ = interpolated_intercept(np.array(radius), np.array(mass) / mass[-1],
+                                                np.linspace(mass_core / mass[-1], mass_core / mass[-1], len(radius)))
 
     radius = []
-    mass = []
     density = []
-    k=0
-    for i in np.linspace(core_radius,2*maximum+core_radius,maxi):
+    k = 0
+    for i in np.linspace(core_radius, 2 * maximum + core_radius, maxi):
         j = i
         radius.append(j)
-        mass = np.sum(masses[distance_to_center<j])
-        volume = 4/3*np.pi*(j)**3
-        density.append(mass/volume)
+        mass = np.sum(masses[distance_to_center < j])
+        volume = 4 / 3 * np.pi * j ** 3
+        density.append(mass / volume)
         if k > 3:
-            if density[0]==0:
-                density[0]=np.NaN
-            if np.std([density[k-3]/density[0],density[k-2]/density[0],density[k-1]/density[0]])<1e-4:
+            if density[0] == 0:
+                density[0] = np.NaN
+            if np.std([density[k - 3] / density[0], density[k - 2] / density[0], density[k - 1] / density[0]]) < 1e-4:
                 break
-        k=k+1
+        k = k + 1
 
     if np.isnan(density[0]):
-        density_radius = 2*0.03
+        density_radius = 2 * 0.03
     else:
-        if np.max(density/density[0])>1:
-            density_radius=2*0.03
+        if np.max(density / density[0]) > 1:
+            density_radius = 2 * 0.03
         else:
-            if density[-1]/density[0]>0.2:
+            if density[-1] / density[0] > 0.2:
                 density_radius = radius[-1]
             else:
-                x, y_ = interpolated_intercept(np.array(radius),np.array(density/density[0]),np.linspace(fraction_density,fraction_density,len(radius)))
+                x, y_ = interpolated_intercept(np.array(radius), np.array(density / density[0]),
+                                               np.linspace(fraction_density, fraction_density, len(radius)))
                 density_radius = x
         if density_radius < 0.03:
-            density_radius = 2*0.03
+            density_radius = 2 * 0.03
 
     return density_radius
 
-def ite_for_axis_ratios_3D(coordinates, core_a, core_b, core_c, ite, gn, density_radius):
+
+def ite_for_axis_ratios_3d(coordinates, core_a, core_b, core_c, ite, density_radius):
     """
     Iteratively estimates the axis ratios of a 3D distribution of points.
     
@@ -249,18 +258,20 @@ def ite_for_axis_ratios_3D(coordinates, core_a, core_b, core_c, ite, gn, density
     axis_a, axis_b, axis_c = [], [], []
 
     for i in range(ite):
-        core_a, core_b, core_c = passe_2_3D(coordinates, core_a, core_b, core_c, gn, density_radius)
+        core_a, core_b, core_c = passe_2_3d(coordinates, core_a, core_b, core_c, density_radius)
         axis_a.append(density_radius)
         axis_b.append(density_radius * core_b / core_a)
         axis_c.append(density_radius * core_c / core_a)
-        
+
         if i > 3:
-            if np.std(axis_c[i-3:i]) == 0:
+            if np.std(axis_c[i - 3:i]) == 0:
                 break
-    
+
     return axis_a[-1], axis_b[-1], axis_c[-1]
 
-def ite_for_axis_ratios_2D(coordinates, core_xy_a, core_xy_b, core_yz_b, core_yz_c, core_xz_a, core_xz_c, angle_1, angle_2, angle_3, ite, gn, density_radius):
+
+def ite_for_axis_ratios_2d(coordinates, core_xy_a, core_xy_b, core_yz_b, core_yz_c, core_xz_a, core_xz_c, angle_1,
+                           angle_2, angle_3, ite, density_radius):
     """
     Iteratively estimates the axis ratios of a 2D distribution of points.
     
@@ -291,21 +302,25 @@ def ite_for_axis_ratios_2D(coordinates, core_xy_a, core_xy_b, core_yz_b, core_yz
     axis_xy_a, axis_xy_b, axis_yz_b, axis_yz_c, axis_xz_a, axis_xz_c = [], [], [], [], [], []
 
     for i in range(ite):
-        core_xy_a, core_xy_b, core_yz_b, core_yz_c, core_xz_a, core_xz_c = passe_2_2D(coordinates, core_xy_a, core_xy_b, core_yz_b, core_yz_c, core_xz_a, core_xz_c, angle_1, angle_2, angle_3, gn, density_radius)
+        core_xy_a, core_xy_b, core_yz_b, core_yz_c, core_xz_a, core_xz_c = passe_2_2d(coordinates, core_xy_a, core_xy_b,
+                                                                                      core_yz_b, core_yz_c, core_xz_a,
+                                                                                      core_xz_c, angle_1, angle_2,
+                                                                                      angle_3, density_radius)
         axis_xy_a.append(density_radius)
         axis_xy_b.append(density_radius * core_xy_b / core_xy_a)
         axis_yz_b.append(density_radius)
         axis_yz_c.append(density_radius * core_yz_c / core_yz_b)
         axis_xz_a.append(density_radius)
         axis_xz_c.append(density_radius * core_xz_c / core_xz_a)
-        
+
         if i > 2:
-            if np.std(axis_xy_a[i-3:i]) == 0:
+            if np.std(axis_xy_a[i - 3:i]) == 0:
                 break
-    
+
     return axis_xy_a, axis_xy_b, axis_yz_b, axis_yz_c, axis_xz_a
 
-def PCA_2D_passe2(coordinates):
+
+def pca_2d_passe2(coordinates):
     """
     Retrieves the axis ratios of the XY projection for a given 3D distribution using PCA.
     
@@ -314,8 +329,8 @@ def PCA_2D_passe2(coordinates):
                    Each row represents a point, and each column represents a coordinate (x, y, z).
                    
     Returns:
-    - xy_a: The square root of the explained variance along the x axis in the XY projection.
-    - xy_b: The square root of the explained variance along the y axis in the XY projection.
+    - xy_a: The square root of the explained variance along the x-axis in the XY projection.
+    - xy_b: The square root of the explained variance along the y-axis in the XY projection.
     """
     pca = PCA(n_components=2)
     pca.fit_transform(coordinates[:, :2])
@@ -323,7 +338,8 @@ def PCA_2D_passe2(coordinates):
 
     return xy_a, xy_b
 
-def passe_2_3D(coordinates, core_a, core_b, core_c, gn, density_radius):
+
+def passe_2_3d(coordinates, core_a, core_b, core_c, density_radius):
     """
     Updates the axis lengths of a 3D distribution of points based on a density radius.
     
@@ -343,22 +359,25 @@ def passe_2_3D(coordinates, core_a, core_b, core_c, gn, density_radius):
     """
     ratio_ab = core_a / core_b
     ratio_ac = core_a / core_c
-    
+
     a = density_radius
     b = a / ratio_ab
     c = a / ratio_ac
-    
-    distance_to_center = ellipse_equation_3D(coordinates[0], coordinates[1], coordinates[2], a, b, c)
-    core_selected_particles = np.array([coordinates[0][distance_to_center < 1], coordinates[1][distance_to_center < 1], coordinates[2][distance_to_center < 1]])
-    
+
+    distance_to_center = ellipse_equation_3d(coordinates[0], coordinates[1], coordinates[2], a, b, c)
+    core_selected_particles = np.array([coordinates[0][distance_to_center < 1], coordinates[1][distance_to_center < 1],
+                                        coordinates[2][distance_to_center < 1]])
+
     if len(core_selected_particles[0]) < 10:
         core_selected_particles = coordinates
-    
-    _, a, b, c = apply_PCA_to_find_main_axes_3D(core_selected_particles)
-    
+
+    _, a, b, c = apply_pca_to_find_main_axes_3d(core_selected_particles)
+
     return a, b, c
 
-def passe_2_2D(coordinates, core_xy_a, core_xy_b, core_yz_b, core_yz_c, core_xz_a, core_xz_c, angle_1, angle_2, angle_3, gn, density_radius):
+
+def passe_2_2d(coordinates, core_xy_a, core_xy_b, core_yz_b, core_yz_c, core_xz_a, core_xz_c, angle_1, angle_2, angle_3,
+               density_radius):
     """
     Updates the axis lengths of a 2D distribution of points based on a density radius.
     
@@ -383,53 +402,61 @@ def passe_2_2D(coordinates, core_xy_a, core_xy_b, core_yz_b, core_yz_c, core_xz_
     ratio_xy_ab = core_xy_a / core_xy_b
     ratio_yz_bc = core_yz_b / core_yz_c
     ratio_xz_ac = core_xz_a / core_xz_c
-    
+
     xy_a = density_radius
     xy_b = xy_a / ratio_xy_ab
     distance_to_center_xy = ellipse_equation(coordinates[0], coordinates[1], angle_1, xy_a, xy_b)
-    core_selected_particles_xy = np.array([coordinates[0][distance_to_center_xy < 1], coordinates[1][distance_to_center_xy < 1]])
-    
+    core_selected_particles_xy = np.array(
+        [coordinates[0][distance_to_center_xy < 1], coordinates[1][distance_to_center_xy < 1]])
+
     if len(core_selected_particles_xy[0]) < 10:
         core_selected_particles_xy = coordinates
-        
-    core_xy_a, core_xy_b = PCA_2D_passe2(core_selected_particles_xy)
-    
+
+    core_xy_a, core_xy_b = pca_2d_passe2(core_selected_particles_xy)
+
     yz_b = density_radius
     yz_c = yz_b / ratio_yz_bc
     distance_to_center_yz = ellipse_equation(coordinates[1], coordinates[2], angle_2, yz_b, yz_c)
-    core_selected_particles_yz = np.array([coordinates[1][distance_to_center_yz < 1], coordinates[2][distance_to_center_yz < 1]])
-    
+    core_selected_particles_yz = np.array(
+        [coordinates[1][distance_to_center_yz < 1], coordinates[2][distance_to_center_yz < 1]])
+
     if len(core_selected_particles_yz[0]) < 10:
         core_selected_particles_yz = coordinates
-        
-    core_yz_b, core_yz_c = PCA_2D_passe2(core_selected_particles_yz)
-    
+
+    core_yz_b, core_yz_c = pca_2d_passe2(core_selected_particles_yz)
+
     xz_a = density_radius
     xz_c = xz_a / ratio_xz_ac
     distance_to_center_xz = ellipse_equation(coordinates[0], coordinates[2], angle_3, xz_a, xz_c)
-    core_selected_particles_xz = np.array([coordinates[0][distance_to_center_xz < 1], coordinates[2][distance_to_center_xz < 1]])
-    
+    core_selected_particles_xz = np.array(
+        [coordinates[0][distance_to_center_xz < 1], coordinates[2][distance_to_center_xz < 1]])
+
     if len(core_selected_particles_xz[0]) < 10:
         core_selected_particles_xz = coordinates
-        
-    core_xz_a, core_xz_c = PCA_2D_passe2(core_selected_particles_xz)
+
+    core_xz_a, core_xz_c = pca_2d_passe2(core_selected_particles_xz)
 
     return core_xy_a, core_xy_b, core_yz_b, core_yz_c, core_xz_a, core_xz_c
 
-def to_align_coordinates(coordinates,core_rotation_matrix):
+
+def to_align_coordinates(coordinates, core_rotation_matrix):
     m = np.array(coordinates).T
     align_general_coordinates_tab = (core_rotation_matrix @ m.T).T
     align_coordinates = align_general_coordinates_tab.T
     return align_coordinates
 
-def ellipse_equation_3D(x,y,z,a,b,c):
-    return np.sqrt(x**2/a**2+y**2/b**2+z**2/c**2)
 
-def ellipse_equation(x,y,angle,a,b):
+def ellipse_equation_3d(x, y, z, a, b, c):
+    return np.sqrt(x ** 2 / a ** 2 + y ** 2 / b ** 2 + z ** 2 / c ** 2)
+
+
+def ellipse_equation(x, y, angle, a, b):
     angle = np.radians(angle)
-    return np.sqrt((x*np.cos(angle)+y*np.sin(angle))**2/a**2+(x*np.sin(angle)-y*np.cos(angle))**2/b**2)
+    return np.sqrt(
+        (x * np.cos(angle) + y * np.sin(angle)) ** 2 / a ** 2 + (x * np.sin(angle) - y * np.cos(angle)) ** 2 / b ** 2)
 
-def growth_curve3D(coordinates,masses,a,b,c):
+
+def growth_curve3d(coordinates, masses, a, b, c):
     """
     Estimates the growth curve of a 3D distribution of points by computing the mass growth over the distribution.
 
@@ -449,38 +476,42 @@ def growth_curve3D(coordinates,masses,a,b,c):
             - h80_radius (float): Radius at which the mass fraction is 0.8.
             - concentration (float): Concentration parameter calculated as 5 * log10(h80_radius / h20_radius).
     """
-    ba=b/a
-    ca=c/a
+    ba = b / a
+    ca = c / a
     maxi = 50
     radius = []
     mass = []
     k = 0
-    maximum = np.max(np.array([np.max(coordinates[0]),np.max(coordinates[1]),np.max(coordinates[2])]))
-    
-    for i in np.linspace(0,2*maximum,maxi):
+    maximum = np.max(np.array([np.max(coordinates[0]), np.max(coordinates[1]), np.max(coordinates[2])]))
+
+    for i in np.linspace(0, 2 * maximum, maxi):
         if i == 0:
             mass.append(0)
             radius.append(0)
         else:
             j = i
             radius.append(j)
-            distance = np.array(ellipse_equation_3D(coordinates[0],coordinates[1],coordinates[2],j,ba*j,ca*j))            
-            mass.append(np.sum(masses[distance<1]))
+            distance = np.array(ellipse_equation_3d(coordinates[0], coordinates[1], coordinates[2], j, ba * j, ca * j))
+            mass.append(np.sum(masses[distance < 1]))
         if k > 3:
-            Mean_3_last_points = np.sum((mass[k-3]+mass[k-2]+mass[k-1])/3)
-            if abs(mass[k] - Mean_3_last_points) <= 1*np.std([mass[k-3],mass[k-2],mass[k-1]]):
+            mean_3_last_points = np.sum((mass[k - 3] + mass[k - 2] + mass[k - 1]) / 3)
+            if abs(mass[k] - mean_3_last_points) <= 1 * np.std([mass[k - 3], mass[k - 2], mass[k - 1]]):
                 break
         k = k + 1
     if mass[-1] < 1e2:
         h50_radius, h20_radius, h80_radius, concentration = np.NaN, np.NaN, np.NaN, np.NaN
-    else:    
-        h50_radius, _ = interpolated_intercept(np.array(radius),np.array(mass)/mass[-1],np.linspace(0.5,0.5,len(mass)))
-        h80_radius, _ = interpolated_intercept(np.array(radius),np.array(mass)/mass[-1],np.linspace(0.8,0.8,len(mass)))
-        h20_radius, _ = interpolated_intercept(np.array(radius),np.array(mass)/mass[-1],np.linspace(0.2,0.2,len(mass)))
-        concentration = 5*np.log10(h80_radius/h20_radius)
+    else:
+        h50_radius, _ = interpolated_intercept(np.array(radius), np.array(mass) / mass[-1],
+                                               np.linspace(0.5, 0.5, len(mass)))
+        h80_radius, _ = interpolated_intercept(np.array(radius), np.array(mass) / mass[-1],
+                                               np.linspace(0.8, 0.8, len(mass)))
+        h20_radius, _ = interpolated_intercept(np.array(radius), np.array(mass) / mass[-1],
+                                               np.linspace(0.2, 0.2, len(mass)))
+        concentration = 5 * np.log10(h80_radius / h20_radius)
     return mass, radius, h50_radius, h20_radius, h80_radius, concentration
 
-def growth_curve_2D(coordinates,masses,xy_a,xy_b,yz_b,yz_c,xz_a,xz_c,angle_1,angle_2,angle_3):
+
+def growth_curve_2d(coordinates, masses, xy_a, xy_b, yz_b, yz_c, xz_a, xz_c, angle_1, angle_2, angle_3):
     """
     Computes the growth curve for 2D distributions in three orthogonal planes: XY, YZ, and XZ.
 
@@ -497,102 +528,113 @@ def growth_curve_2D(coordinates,masses,xy_a,xy_b,yz_b,yz_c,xz_a,xz_c,angle_1,ang
         angle_2 (float): Angle of rotation for the ellipse in the YZ plane.
         angle_3 (float): Angle of rotation for the ellipse in the XZ plane.
 
-    Returns:
-        tuple: A tuple containing the following elements:
-            - h50_radius_xy (float): Radius at which the mass fraction is 0.5 in the XY plane.
-            - h20_radius_xy (float): Radius at which the mass fraction is 0.2 in the XY plane.
-            - h80_radius_xy (float): Radius at which the mass fraction is 0.8 in the XY plane.
-            - concentration_xy (float): Concentration parameter calculated as 5 * log10(h80_radius_xy / h20_radius_xy) in the XY plane.
-            - h50_radius_yz (float): Radius at which the mass fraction is 0.5 in the YZ plane.
-            - h20_radius_yz (float): Radius at which the mass fraction is 0.2 in the YZ plane.
-            - h80_radius_yz (float): Radius at which the mass fraction is 0.8 in the YZ plane.
-            - concentration_yz (float): Concentration parameter calculated as 5 * log10(h80_radius_yz / h20_radius_yz) in the YZ plane.
-            - h50_radius_xz (float): Radius at which the mass fraction is 0.5 in the XZ plane.
-            - h20_radius_xz (float): Radius at which the mass fraction is 0.2 in the XZ plane.
-            - h80_radius_xz (float): Radius at which the mass fraction is 0.8 in the XZ plane.
-            - concentration_xz (float): Concentration parameter calculated as 5 * log10(h80_radius_xz / h20_radius_xz) in the XZ plane.
+    Returns: tuple: A tuple containing the following elements: - h50_radius_xy (float): Radius at which the mass
+    fraction is 0.5 in the XY plane. - h20_radius_xy (float): Radius at which the mass fraction is 0.2 in the XY
+    plane. - h80_radius_xy (float): Radius at which the mass fraction is 0.8 in the XY plane. - concentration_xy (
+    float): Concentration parameter calculated as 5 * log10(h80_radius_xy / h20_radius_xy) in the XY plane. -
+    h50_radius_yz (float): Radius at which the mass fraction is 0.5 in the YZ plane. - h20_radius_yz (float): Radius
+    at which the mass fraction is 0.2 in the YZ plane. - h80_radius_yz (float): Radius at which the mass fraction is
+    0.8 in the YZ plane. - concentration_yz (float): Concentration parameter calculated as 5 * log10(h80_radius_yz /
+    h20_radius_yz) in the YZ plane. - h50_radius_xz (float): Radius at which the mass fraction is 0.5 in the XZ
+    plane. - h20_radius_xz (float): Radius at which the mass fraction is 0.2 in the XZ plane. - h80_radius_xz (
+    float): Radius at which the mass fraction is 0.8 in the XZ plane. - concentration_xz (float): Concentration
+    parameter calculated as 5 * log10(h80_radius_xz / h20_radius_xz) in the XZ plane.
     """
     maxi = 50
-    maximum = np.max(np.array([np.max(coordinates[0]),np.max(coordinates[1]),np.max(coordinates[2])]))
+    maximum = np.max(np.array([np.max(coordinates[0]), np.max(coordinates[1]), np.max(coordinates[2])]))
     ##################### XY #####################
-    Mass_xy = []
-    Radius_xy = []
+    mass_xy = []
+    radius_xy = []
     k = 0
-    for i in np.linspace(0,2*maximum,maxi):
+    for i in np.linspace(0, 2 * maximum, maxi):
         if i == 0:
-            Mass_xy.append(0)
-            Radius_xy.append(0)
+            mass_xy.append(0)
+            radius_xy.append(0)
         else:
             j = i
-            distance_to_center_xy = ellipse_equation(coordinates[0],coordinates[1],angle_1,j,j*xy_b/xy_a)
-            Mass_xy.append(np.sum(masses[distance_to_center_xy<1]))
-            Radius_xy.append(j)
+            distance_to_center_xy = ellipse_equation(coordinates[0], coordinates[1], angle_1, j, j * xy_b / xy_a)
+            mass_xy.append(np.sum(masses[distance_to_center_xy < 1]))
+            radius_xy.append(j)
             if k > 4:
-                mean_3 = np.mean([Mass_xy[k-4],Mass_xy[k-3],Mass_xy[k-2]])
-                if abs(Mass_xy[k-1]-mean_3) <= 1*np.std([Mass_xy[k-4],Mass_xy[k-3],Mass_xy[k-2]]):
+                mean_3 = np.mean([mass_xy[k - 4], mass_xy[k - 3], mass_xy[k - 2]])
+                if abs(mass_xy[k - 1] - mean_3) <= 1 * np.std([mass_xy[k - 4], mass_xy[k - 3], mass_xy[k - 2]]):
                     break
         k = k + 1
-    if Mass_xy[-1] < 1e2:
+    if mass_xy[-1] < 1e2:
         h50_radius_xy, h20_radius_xy, h80_radius_xy, concentration_xy = np.NaN, np.NaN, np.NaN, np.NaN
-    else:    
-        h50_radius_xy, _ = interpolated_intercept(np.array(Radius_xy),np.array(Mass_xy)/Mass_xy[-1],np.linspace(0.5,0.5,len(Mass_xy)))
-        h80_radius_xy, _ = interpolated_intercept(np.array(Radius_xy),np.array(Mass_xy)/Mass_xy[-1],np.linspace(0.8,0.8,len(Mass_xy)))
-        h20_radius_xy, _ = interpolated_intercept(np.array(Radius_xy),np.array(Mass_xy)/Mass_xy[-1],np.linspace(0.2,0.2,len(Mass_xy)))
-        concentration_xy = 5*np.log10(h80_radius_xy/h20_radius_xy)
+    else:
+        h50_radius_xy, _ = interpolated_intercept(np.array(radius_xy), np.array(mass_xy) / mass_xy[-1],
+                                                  np.linspace(0.5, 0.5, len(mass_xy)))
+        h80_radius_xy, _ = interpolated_intercept(np.array(radius_xy), np.array(mass_xy) / mass_xy[-1],
+                                                  np.linspace(0.8, 0.8, len(mass_xy)))
+        h20_radius_xy, _ = interpolated_intercept(np.array(radius_xy), np.array(mass_xy) / mass_xy[-1],
+                                                  np.linspace(0.2, 0.2, len(mass_xy)))
+        concentration_xy = 5 * np.log10(h80_radius_xy / h20_radius_xy)
 
     ##################### YZ #####################
-    Mass_yz = []
-    Radius_yz = []
+    mass_yz = []
+    radius_yz = []
     k = 0
-    for i in np.linspace(0,2*maximum,maxi):
+    for i in np.linspace(0, 2 * maximum, maxi):
         if i == 0:
-            Mass_yz.append(0)
-            Radius_yz.append(0)
+            mass_yz.append(0)
+            radius_yz.append(0)
         else:
             j = i
-            distance_to_center_yz = ellipse_equation(coordinates[1],coordinates[2],angle_2,j,j*yz_c/yz_b)
-            Mass_yz.append(np.sum(masses[distance_to_center_yz<1]))
-            Radius_yz.append(j)
+            distance_to_center_yz = ellipse_equation(coordinates[1], coordinates[2], angle_2, j, j * yz_c / yz_b)
+            mass_yz.append(np.sum(masses[distance_to_center_yz < 1]))
+            radius_yz.append(j)
             if k > 4:
-                mean_3 = np.mean([Mass_yz[k-4],Mass_yz[k-3],Mass_yz[k-2]])
-                if abs(Mass_yz[k-1]-mean_3) <= 1*np.std([Mass_yz[k-4],Mass_yz[k-3],Mass_yz[k-2]]):
+                mean_3 = np.mean([mass_yz[k - 4], mass_yz[k - 3], mass_yz[k - 2]])
+                if abs(mass_yz[k - 1] - mean_3) <= 1 * np.std([mass_yz[k - 4], mass_yz[k - 3], mass_yz[k - 2]]):
                     break
         k = k + 1
-    if Mass_yz[-1] < 1e2:
+    if mass_yz[-1] < 1e2:
         h50_radius_yz, h20_radius_yz, h80_radius_yz, concentration_yz = np.NaN, np.NaN, np.NaN, np.NaN
-    else:   
-        h50_radius_yz, _ = interpolated_intercept(np.array(Radius_yz),np.array(Mass_yz)/Mass_yz[-1],np.linspace(0.5,0.5,len(Mass_yz)))
-        h80_radius_yz, _ = interpolated_intercept(np.array(Radius_yz),np.array(Mass_yz)/Mass_yz[-1],np.linspace(0.8,0.8,len(Mass_yz)))
-        h20_radius_yz, _ = interpolated_intercept(np.array(Radius_yz),np.array(Mass_yz)/Mass_yz[-1],np.linspace(0.2,0.2,len(Mass_yz)))
-        concentration_yz = 5*np.log10(h80_radius_yz/h20_radius_yz)
+    else:
+        h50_radius_yz, _ = interpolated_intercept(np.array(radius_yz), np.array(mass_yz) / mass_yz[-1],
+                                                  np.linspace(0.5, 0.5, len(mass_yz)))
+        h80_radius_yz, _ = interpolated_intercept(np.array(radius_yz), np.array(mass_yz) / mass_yz[-1],
+                                                  np.linspace(0.8, 0.8, len(mass_yz)))
+        h20_radius_yz, _ = interpolated_intercept(np.array(radius_yz), np.array(mass_yz) / mass_yz[-1],
+                                                  np.linspace(0.2, 0.2, len(mass_yz)))
+        concentration_yz = 5 * np.log10(h80_radius_yz / h20_radius_yz)
 
     ##################### XZ #####################
-    Mass_xz = []
-    Radius_xz = []
+    mass_xz = []
+    radius_xz = []
     k = 0
-    for i in np.linspace(0,2*maximum,maxi):
+    for i in np.linspace(0, 2 * maximum, maxi):
         if i == 0:
-            Mass_xz.append(0)
-            Radius_xz.append(0)
+            mass_xz.append(0)
+            radius_xz.append(0)
         else:
             j = i
-            distance_to_center_xz = ellipse_equation(coordinates[0],coordinates[2],angle_3,j,j*xz_c/xz_a)
-            Mass_xz.append(np.sum(masses[distance_to_center_xz<1]))
-            Radius_xz.append(j)
+            distance_to_center_xz = ellipse_equation(coordinates[0], coordinates[2], angle_3, j, j * xz_c / xz_a)
+            mass_xz.append(np.sum(masses[distance_to_center_xz < 1]))
+            radius_xz.append(j)
             if k > 4:
-                mean_3 = np.mean([Mass_xz[k-4],Mass_xz[k-3],Mass_xz[k-2]])
-                if abs(Mass_xz[k-1]-mean_3) <= 1*np.std([Mass_xz[k-4],Mass_xz[k-3],Mass_xz[k-2]]):
+                mean_3 = np.mean([mass_xz[k - 4], mass_xz[k - 3], mass_xz[k - 2]])
+                if abs(mass_xz[k - 1] - mean_3) <= 1 * np.std([mass_xz[k - 4], mass_xz[k - 3], mass_xz[k - 2]]):
                     break
         k = k + 1
-    if Mass_xz[-1] < 1e2:
+    if mass_xz[-1] < 1e2:
         h50_radius_xz, h20_radius_xz, h80_radius_xz, concentration_xz = np.NaN, np.NaN, np.NaN, np.NaN
-    else:   
-        h50_radius_xz, _ = interpolated_intercept(np.array(Radius_xz),np.array(Mass_xz)/Mass_xz[-1],np.linspace(0.5,0.5,len(Mass_xz)))
-        h80_radius_xz, _ = interpolated_intercept(np.array(Radius_xz),np.array(Mass_xz)/Mass_xz[-1],np.linspace(0.8,0.8,len(Mass_xz)))
-        h20_radius_xz, _ = interpolated_intercept(np.array(Radius_xz),np.array(Mass_xz)/Mass_xz[-1],np.linspace(0.2,0.2,len(Mass_xz)))
-        concentration_xz = 5*np.log10(h80_radius_xz/h20_radius_xz)
+    else:
+        h50_radius_xz, _ = interpolated_intercept(np.array(radius_xz), np.array(mass_xz) / mass_xz[-1],
+                                                  np.linspace(0.5, 0.5, len(mass_xz)))
+        h80_radius_xz, _ = interpolated_intercept(np.array(radius_xz), np.array(mass_xz) / mass_xz[-1],
+                                                  np.linspace(0.8, 0.8, len(mass_xz)))
+        h20_radius_xz, _ = interpolated_intercept(np.array(radius_xz), np.array(mass_xz) / mass_xz[-1],
+                                                  np.linspace(0.2, 0.2, len(mass_xz)))
+        concentration_xz = 5 * np.log10(h80_radius_xz / h20_radius_xz)
 
-    return h50_radius_xy, h20_radius_xy, h80_radius_xy, concentration_xy, h50_radius_yz, h20_radius_yz, h80_radius_yz, concentration_yz, h50_radius_xz, h20_radius_xz, h80_radius_xz, concentration_xz
+    return (
+        h50_radius_xy, h20_radius_xy, h80_radius_xy, concentration_xy,
+        h50_radius_yz, h20_radius_yz, h80_radius_yz, concentration_yz,
+        h50_radius_xz, h20_radius_xz, h80_radius_xz, concentration_xz
+    )
+
 
 def interpolated_intercept(x, y1, y2):
     """
@@ -606,19 +648,18 @@ def interpolated_intercept(x, y1, y2):
     Returns:
         tuple: A tuple containing the x and y coordinates of the interpolated intercept.
     """
-    def line(p1, p2):
-        A = p1[1] - p2[1]
-        B = p2[0] - p1[0]
-        C = p1[0] * p2[1] - p2[0] * p1[1]
-        return A, B, -C
 
-    def intersection(L1, L2):
-        D = L1[0] * L2[1] - L1[1] * L2[0]
-        Dx = L1[2] * L2[1] - L1[1] * L2[2]
-        Dy = L1[0] * L2[2] - L1[2] * L2[0]
-        x = Dx / D
-        y = Dy / D
-        return x, y
+    def line(p1, p2):
+        a = p1[1] - p2[1]
+        b = p2[0] - p1[0]
+        c = p1[0] * p2[1] - p2[0] * p1[1]
+        return a, b, -c
+
+    def intersection(l1, l2):
+        d = l1[0] * l2[1] - l1[1] * l2[0]
+        dx = l1[2] * l2[1] - l1[1] * l2[2]
+        dy = l1[0] * l2[2] - l1[2] * l2[0]
+        return dx / d, dy / d
 
     idx = np.argwhere(np.diff(np.sign(y1 - y2)) != 0).flatten()
 
@@ -631,11 +672,12 @@ def interpolated_intercept(x, y1, y2):
 
     return xc, yc
 
-def solving_the_box_problem(dx,box_max):
+
+def solving_the_box_problem(dx, box_max):
     box_size = box_max
-    if (len(dx[dx<0.1*box_size])!=0)&(len(dx[dx>0.9*box_size])!=0):
+    if (len(dx[dx < 0.1 * box_size]) != 0) & (len(dx[dx > 0.9 * box_size]) != 0):
         half = 0.5 * box_size
-        dx = np.where(dx > half,dx-box_size,dx)
+        dx = np.where(dx > half, dx - box_size, dx)
     else:
         dx = dx
     return dx

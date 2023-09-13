@@ -6,6 +6,7 @@
 import pandas as pd
 from astropy.table import Table
 
+
 def csv_to_fits(csv_file, fits_file):
     """
     Convert a CSV file to a FITS file.
