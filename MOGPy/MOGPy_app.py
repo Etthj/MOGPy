@@ -1,6 +1,9 @@
+import unittest
+
 import numpy as np
 from astropy.table import Table
 from sklearn.decomposition import PCA
+from multiprocessing import Pool
 
 
 class EAGLEGalaxy:
@@ -48,40 +51,54 @@ class EAGLEGalaxy:
         return pca.components_, np.sqrt(pca.explained_variance_)
 
 
-def main():
-    # Specify the galaxy's GroupNumber
-    galaxy_group_number = 21
-
-    # Create an EAGLEGalaxy object for the specified galaxy
+def process_galaxy(galaxy_group_number):
     galaxy = EAGLEGalaxy(galaxy_group_number)
-
-    # Load data for the galaxy for all particle types
     galaxy.load_galaxy_data()
-
-    # Now we can access the different particle types like galaxy.stars, galaxy.gas, etc.
-    print(f"Stellar Particle Coordinates of Galaxy {galaxy_group_number}:")
-    print(len(galaxy.stars['Coordinates'][0]))
-
-    print(f"Gas Particle Coordinates of Galaxy {galaxy_group_number}:")
-    print(len(galaxy.gas['Coordinates'][0]))
-
-    print(f"Dark Matter Particle Coordinates of Galaxy {galaxy_group_number}:")
-    print(len(galaxy.dark_matter['Coordinates'][0]))
-
-    # Access all particles
-    print(f"All Particle Coordinates of Galaxy {galaxy_group_number}:")
-    all_coordinates = galaxy.get_all_coordinates()
-    print(len(all_coordinates[0]))
 
     # Apply PCA to stars' coordinates
     stars_rotation_matrix, stars_explained_variances = EAGLEGalaxy.apply_pca_to_find_main_axes_3d(
         galaxy.stars['Coordinates'])
 
-    # Print PCA results for stars
-    print("PCA Rotation Matrix for Stars:")
-    print(stars_rotation_matrix)
-    print("PCA Explained Variances for Stars:")
-    print(stars_explained_variances)
+    return galaxy_group_number, stars_rotation_matrix, stars_explained_variances
+
+
+class TestEAGLEGalaxyProcessing(unittest.TestCase):
+    def test_process_galaxy(self):
+        # Test the process_galaxy function with a known input
+        galaxy_group_number = 21
+        result = process_galaxy(galaxy_group_number)
+
+        # Extract the expected result
+        _, expected_rotation_matrix, expected_explained_variances = process_galaxy(galaxy_group_number)
+
+        # Assert that the result is as expected
+        self.assertEqual(result[0], galaxy_group_number)
+        self.assertTrue(np.array_equal(result[1], expected_rotation_matrix))
+        self.assertTrue(np.array_equal(result[2], expected_explained_variances))
+
+
+def main():
+    # Specify the galaxy group numbers you want to process
+    galaxy_group_numbers = [21, 21, 21]  # Add more group numbers as needed
+
+    # Create a multiprocessing pool with the number of processes you want to use
+    pool = Pool(processes=len(galaxy_group_numbers))
+
+    # Use the pool to process galaxy group numbers in parallel
+    results = pool.map(process_galaxy, galaxy_group_numbers)
+    pool.close()
+    pool.join()
+
+    # Create an Astropy table to store the results
+    result_table = Table(names=('GroupNumber', 'RotationMatrix', 'ExplainedVariances'),
+                         dtype=('i4', 'O', 'O'))
+
+    # Populate the table with the results
+    for group_number, rotation_matrix, explained_variances in results:
+        result_table.add_row([group_number, rotation_matrix, explained_variances])
+
+    # Save the table to a file or perform any other desired operations
+    print(result_table)
 
 
 if __name__ == "__main__":
