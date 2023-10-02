@@ -1,13 +1,14 @@
-import unittest
+import logging
 
 import numpy as np
 from astropy.table import Table
 from sklearn.decomposition import PCA
-from multiprocessing import Pool
+
+logging.basicConfig(level=logging.INFO)
 
 
 class EAGLEGalaxy:
-    def __init__(self, galaxy_group_number, data_folder='../data'):
+    def __init__(self, galaxy_group_number, data_folder='./data'):
         self.galaxy_group_number = galaxy_group_number
         self.data_folder = data_folder
         self.particles = {
@@ -21,8 +22,11 @@ class EAGLEGalaxy:
         self.all_particles = None
 
     def load_galaxy_data(self):
-        # Read the snapshot data into a table
-        hdu = Table.read(f'data/EAGLE_RefL0012N0188_Snapshot23.fits', format='fits')
+        try:
+            hdu = Table.read(f'{self.data_folder}/EAGLE_Gal21.fits', format='fits')
+        except FileNotFoundError:
+            logging.error("Data file not found.")
+            return
         all_particle_data = {}  # Create a dictionary to store data for all particle types
         for particle_type, particle_name in self.particles.items():
             mask = (hdu['GroupNumber'] == self.galaxy_group_number) & (hdu['itype'] == particle_type)
@@ -45,59 +49,69 @@ class EAGLEGalaxy:
         return all_coordinates
 
     @staticmethod
-    def apply_pca_to_find_main_axes_3d(coordinates):
+    def apply_pca_to_find_main_axes_3d(coordinates, radius=30):
+        if radius is not None:
+            norms = np.linalg.norm(coordinates, axis=1)
+            coordinates = coordinates[norms <= radius]
+            if len(coordinates) == 0:
+                return None, None
+
         pca = PCA(n_components=3)
         pca.fit(coordinates.T)
         return pca.components_, np.sqrt(pca.explained_variance_)
 
+    @staticmethod
+    def recenter_coordinates(coordinates, center=None):
+        iterations = 3 if center is None else 1
+        adjusted_coords = coordinates.copy()
+        medians = []
 
-def process_galaxy(galaxy_group_number):
-    galaxy = EAGLEGalaxy(galaxy_group_number)
-    galaxy.load_galaxy_data()
+        for _ in range(iterations):
+            transposed = np.array(adjusted_coords).T
+            median = center if center is not None else np.median(transposed, axis=0)
+            medians.append(median)
+            adjusted_coords = (transposed - median).T
 
-    # Apply PCA to stars' coordinates
-    stars_rotation_matrix, stars_explained_variances = EAGLEGalaxy.apply_pca_to_find_main_axes_3d(
-        galaxy.stars['Coordinates'])
+            dist_to_center = np.linalg.norm(adjusted_coords, axis=1)
+            adaptive_radius = np.std(dist_to_center)
+            core_filter = dist_to_center < adaptive_radius
 
-    return galaxy_group_number, stars_rotation_matrix, stars_explained_variances
+            if np.count_nonzero(core_filter) >= 10:
+                core_coords = adjusted_coords[core_filter]
+                median = np.median(core_coords, axis=0)
+                adjusted_coords -= median
+            else:
+                break  # Break if not enough particles are within the adaptive radius, to avoid unnecessary iterations
 
-
-class TestEAGLEGalaxyProcessing(unittest.TestCase):
-    def test_process_galaxy(self):
-        # Test the process_galaxy function with a known input
-        galaxy_group_number = 21
-        result = process_galaxy(galaxy_group_number)
-
-        # Extract the expected result
-        _, expected_rotation_matrix, expected_explained_variances = process_galaxy(galaxy_group_number)
-
-        # Assert that the result is as expected
-        self.assertEqual(result[0], galaxy_group_number)
-        self.assertTrue(np.array_equal(result[1], expected_rotation_matrix))
-        self.assertTrue(np.array_equal(result[2], expected_explained_variances))
+        return adjusted_coords, medians
 
 
 def main():
-    # Specify the galaxy group numbers you want to process
-    galaxy_group_numbers = [21, 21, 21]  # Add more group numbers as needed
+    # Specify the galaxy group numbers
+    galaxy_group_number = [21]
 
-    # Create a multiprocessing pool with the number of processes you want to use
-    pool = Pool(processes=len(galaxy_group_numbers))
+    galaxy = EAGLEGalaxy(galaxy_group_number)
+    galaxy.load_galaxy_data()
 
-    # Use the pool to process galaxy group numbers in parallel
-    results = pool.map(process_galaxy, galaxy_group_numbers)
-    pool.close()
-    pool.join()
+    # Recenter coordinates
+    stars_center_coords, _ = EAGLEGalaxy.recenter_coordinates(galaxy.stars['Coordinates'], center=None)
+
+    # Apply PCA to stars' coordinates
+    stars_rotation_matrix, stars_explained_variances = EAGLEGalaxy.apply_pca_to_find_main_axes_3d(
+        stars_center_coords)
+
+    results = galaxy_group_number, stars_rotation_matrix, stars_explained_variances, stars_center_coords
 
     # Create an Astropy table to store the results
-    result_table = Table(names=('GroupNumber', 'RotationMatrix', 'ExplainedVariances'),
-                         dtype=('i4', 'O', 'O'))
+    result_table = Table(names=('GroupNumber', 'ParticleType', 'RotationMatrix', 'ExplainedVariances'),
+                         dtype=('i4', 'str', 'O', 'O'))
 
     # Populate the table with the results
-    for group_number, rotation_matrix, explained_variances in results:
-        result_table.add_row([group_number, rotation_matrix, explained_variances])
+    group_number, rotation_matrix, explained_variances, stars_center_coords = results
+    result_table.add_row([group_number[0], 'Stars', rotation_matrix,
+                          explained_variances])
 
-    # Save the table to a file or perform any other desired operations
+    # Save the table to a file or print
     print(result_table)
 
 
